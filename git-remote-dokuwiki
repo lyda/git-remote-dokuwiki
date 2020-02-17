@@ -356,7 +356,15 @@ sub dw_import_ref {
         my $req = RPC::XML::request->new('wiki.getAttachment',
                     RPC::XML::string->new($$act{pg}));
         my $content = $dokuwiki->send_request($req);
-        info("Getting $$act{fqpg}");
+        $req = RPC::XML::request->new('wiki.getAttachmentInfo',
+                    RPC::XML::string->new($$act{pg}));
+        my $meta = $dokuwiki->send_request($req);
+        info("Getting $$act{fqpg} (size: ". $$meta{size}->value
+             . ", length: ". length($content->value)
+             . ", bytes::length: ". bytes::length($content->value) . ")");
+        open(F, ">$$act{pg}}");
+        print F "$content";
+        close(F);
         print_data_raw $content->value;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
