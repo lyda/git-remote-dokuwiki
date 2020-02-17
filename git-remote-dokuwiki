@@ -85,7 +85,7 @@ sub connect_maybe {
     $dokuwiki->send_request($req);
   }
   my $req = RPC::XML::request->new('dokuwiki.getVersion');
-  info("Dokuwiki version: ". $dokuwiki->send_request($req)->value);
+  info("Dokuwiki server version: ". $dokuwiki->send_request($req)->value);
 
   return $dokuwiki;
 }
