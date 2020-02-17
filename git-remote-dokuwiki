@@ -362,8 +362,8 @@ sub dw_import_ref {
         info("Getting $$act{fqpg} (size: ". $$meta{size}->value
              . ", length: ". length($content->value)
              . ", bytes::length: ". bytes::length($content->value) . ")");
-        open(F, ">$$act{pg}}");
-        print F "$content";
+        open(F, ">$mark.$$act{pg}");
+        print F $content->value;
         close(F);
         print_data_raw $content->value;
         print "\n\n";
