@@ -84,6 +84,8 @@ sub connect_maybe {
                   RPC::XML::string->new($password));
     $dokuwiki->send_request($req);
   }
+  my $req = RPC::XML::request->new('dokuwiki.getVersion');
+  info("Dokuwiki version: ". $dokuwiki->send_request($req)->value);
 
   return $dokuwiki;
 }
@@ -355,6 +357,7 @@ sub dw_import_ref {
         my $req = RPC::XML::request->new('wiki.getAttachment',
                     RPC::XML::string->new($$act{pg}));
         my $content = $dokuwiki->send_request($req);
+        info("Getting $$act{fqpg}");
         print_data_raw $content->value;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
