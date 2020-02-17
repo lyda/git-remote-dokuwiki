@@ -1,0 +1,425 @@
+#!/usr/bin/perl
+
+use lib (split(/:/, $ENV{GITPERLLIB} || '/usr/share/perl5'));
+
+# Copyright (C) 2020
+#     Kevin Lyda <kevin@lyda.ie>
+# License: GPL v2 or later
+
+# Gateway between Git and Dokuwiki.
+# Based off Git DokuWiki remote and the Dokuwiki docs:
+#   https://www.dokuwiki.org/devel:xmlrpc:clients
+
+use strict;
+use Data::Dumper;
+use Git;
+use HTTP::CookieJar::LWP ();
+use JSON;
+use RPC::XML::Client;
+use Try::Tiny;
+use warnings;
+
+# By default, use UTF-8 to communicate with Git and the user
+binmode STDERR, ':encoding(UTF-8)';
+binmode STDOUT, ':encoding(UTF-8)';
+
+if (@ARGV != 2) {
+  exit_error_usage();
+}
+
+my $remotename = $ARGV[0];
+my $url = $ARGV[1];
+my $dokuwiki = "Not connected";
+
+# Remember the timestamp corresponding to a revision id.
+my %basetimestamps;
+
+my $domain = Git::config("remote.$remotename.dwDomain");
+if (!defined($domain)) {
+  $domain = $url;
+  $domain =~ s{[^/]*://}{};
+  $domain =~ s{[:/].*}{};
+  # If URL is like http://user:password@example.com/, we clearly don't
+  # want the password in $domain. While we're there, also remove user
+  # and '@' sign, to avoid author like MWUser@HTTPUser@host.com
+  $domain =~ s/^.*@//;
+} else {
+  chomp($domain);
+}
+info("Read configuration...");
+
+while (<STDIN>) {
+  chomp;
+
+  if (!parse_command($_)) {
+    last;
+  }
+  BEGIN { $| = 1 } # flush STDOUT, to make sure the previous
+                   # command is fully processed.
+}
+
+sub connect_maybe {
+  my ($dokuwiki, $remotename, $url) = @_;
+  return $dokuwiki if ref $dokuwiki;
+
+  my $jar = HTTP::CookieJar::LWP->new;
+  my $xmlrpc = "$url/lib/exe/xmlrpc.php";
+  $xmlrpc =~ s{//lib/}{/lib/};
+  $dokuwiki = RPC::XML::Client->new($xmlrpc,
+    error_handler => sub { die "Transport error: ". $_[0]; },
+    fault_handler => sub { die "Protocol error: ". $_[0]->string; },
+    useragent => [cookie_jar => $jar]);
+
+
+  my $user = Git::config("remote.$remotename.dwUser");
+  if (defined($user)) {
+    chomp($user);
+    my $password = Git::config("remote.$remotename.dwPassword");
+    if (!defined($password)) {
+      $password = "";
+    }
+    chomp($password);
+    my $req = RPC::XML::request->new('dokuwiki.login',
+                  RPC::XML::string->new($user),
+                  RPC::XML::string->new($password));
+    $dokuwiki->send_request($req);
+  }
+
+  return $dokuwiki;
+}
+
+sub info {
+  print STDERR shift . "\n";
+}
+
+sub exit_error_usage {
+  die "ERROR: git-remote-dokuwiki module was not called with a correct number of\n" .
+      "parameters\n" .
+      "You may obtain this error because you attempted to run the git-remote-dokuwiki\n" .
+            "module directly.\n" .
+      "This module can be used the following way:\n" .
+      "\tgit clone dokuwiki://<address of a dokuwiki>\n" .
+      "Then, use git commit, push and pull as with every normal git repository.\n";
+}
+
+sub print_data {
+  my $data = shift;
+
+  print "data ". bytes::length($data). "\n". $data;
+}
+
+sub print_data_raw {
+  my $data = shift;
+
+  utf8::downgrade($data);
+  binmode STDOUT, ":raw";
+  print "data ". bytes::length($data). "\n". $data;
+  binmode STDOUT, ":encoding(UTF-8)";
+}
+
+sub run_git {
+  my $args = shift;
+
+  my $encoding = (shift || 'encoding(UTF-8)');
+  open(my $git, "-|:${encoding}", "git ${args}")
+      or die "Unable to fork: $!\n";
+  my $res = do {
+    local $/ = undef;
+    <$git>
+  };
+  close($git);
+
+  return $res;
+}
+
+sub parse_command {
+  my $line = shift;
+  my @cmd = split(/ /, $line);
+  if (!defined $cmd[0]) {
+    return 0;
+  }
+  if ($cmd[0] eq 'capabilities') {
+    die("Too many arguments for capabilities ($line)\n") if (defined($cmd[1]));
+    dw_capabilities();
+  } elsif ($cmd[0] eq 'list') {
+    die("Too many arguments for list ($line)\n") if (defined($cmd[2]));
+    dw_list($cmd[1]);
+  } elsif ($cmd[0] eq 'import') {
+    die("Invalid argument for import ($line)\n") if ($cmd[1] eq "");
+    die("Too many arguments for import ($line)\n") if (defined($cmd[2]));
+    dw_import($cmd[1]);
+  } elsif ($cmd[0] eq 'push') {
+    die("Invalid argument for push ($line)\n") if ($cmd[1] eq "");
+    die("Too many arguments for push ($line)\n") if (defined($cmd[2]));
+    dw_push($cmd[1]);
+  } else {
+    info("Unknown command ($cmd[0]). Aborting...");
+    return 0;
+  }
+  return 1;
+}
+
+sub dw_capabilities {
+  print << "EOF";
+refspec refs/heads/*:refs/dokuwiki/$remotename/*
+import
+list
+push
+
+EOF
+  return;
+}
+
+sub dw_list {
+  # Dokuwiki doesn't grok brnaches.  Just hardcode this to master.
+  print << 'EOF';
+? refs/heads/master
+@refs/heads/master HEAD
+
+EOF
+  return
+}
+
+sub get_more_args {
+  my $cmd = shift;
+  my @args = (shift);
+  while (1) {
+    my $line = <STDIN>;
+    if ($line =~ /^$cmd (.*)$/) {
+      push(@args, $1);
+    } elsif ($line eq "\n") {
+      return @args;
+    } else {
+      die("Invalid command in a '$cmd' batch: $_\n");
+    }
+  }
+  return;
+}
+
+sub dw_import {
+  my @refs = get_more_args("import", shift);
+  my %refs_done;
+  foreach my $ref (@refs) {
+    dw_import_ref($ref) if !exists($refs_done{$ref});
+    $refs_done{$ref} = 1;
+  }
+  print "done\n";
+  return
+}
+
+sub dw_import_ref {
+  my $ref = shift;
+
+  if ($ref eq 'HEAD') {
+    return;
+  }
+
+  $dokuwiki = connect_maybe($dokuwiki, $remotename, $url);
+  info("Connected to dokuwiki...");
+
+  # $last and $cur contain the notes to tell when the last fetch was.
+  # They each contain: v, a, and p.
+  # v: The last revision.
+  # p: The list of all pages in the last fetch.
+  # p: The list of all attachments in the last fetch.
+  # The p var exists to track deleted pages.  If a page has been deleted,
+  # we're not told until it's recreated (and it will be a version we ignore).
+  my $last = get_last_fetch_info();
+  if ($$last{v} == 0) {
+    info("Fetching from beginning.");
+  } else {
+    info("Fetching from " . localtime($$last{v}));
+  }
+  my $cur = {v => $$last{v}, a => {}, p => {}};
+
+  info("Getting pages (from ". localtime($$last{v}). ")...");
+  my $req = RPC::XML::request->new('dokuwiki.getPagelist',
+              RPC::XML::string->new(''),
+              RPC::XML::struct->new(
+                  depth => 0,
+                  skipacl => 1,
+                  hash => 0,
+              ));
+  my $res = $dokuwiki->send_request($req);
+  my %import;
+  info("Getting revisions (". scalar(@{$res->value}). " pages)...");
+  # Get the current server time here to ensure we're getting a consistent
+  # view of the pages.
+  $req = RPC::XML::request->new('dokuwiki.getTime');
+  my $server_time = $dokuwiki->send_request($req)->value;
+  # STEP: Get pages.
+  foreach my $page (@{$res->value}) {
+    my $pg = $$page{id};
+    my $fqpg = $pg;
+    $fqpg =~ s{:}{/}g;
+    delete $$last{p}{$fqpg};
+    $$cur{p}{$fqpg} = 1;
+    $req = RPC::XML::request->new('wiki.getPageVersions',
+               RPC::XML::string->new($pg),
+               RPC::XML::int->new(0));
+    my $versions = $dokuwiki->send_request($req);
+    foreach my $version (@{$versions}) {
+      my $v = $$version{version}->value;
+      next if $v < $$last{v};
+      next if $v > $server_time;
+      my $comment = $$version{sum}->value;
+      $comment .= "\n\n" if $comment ne "";
+      $comment .= "IP: ". $$version{ip}->value. "\n";
+      my $user = $$version{user}->value;
+      push(@{$import{$v}}, {
+          action => $$version{type}->value,
+          author => $user eq ""? "anonymous": $user,
+          comment => $comment,
+          pg => $pg,
+          fqpg => $fqpg,
+        }
+      );
+    }
+  }
+
+  # STEP: Get implied page deletions.
+  info("Generating implied deletions (". scalar(keys(%{$$last{p}}))
+       . " pages)...");
+  foreach my $doomed (keys(%{$$last{p}})) {
+    push(@{$import{$server_time}}, {
+        action => "D",
+        author => "git-remote-dokuwiki",
+        comment => "git-remote-dokuwiki implied delete detected.",
+        fqpg => $doomed,
+      }
+    );
+  }
+
+  # STEP: Get attachments.
+  my $attachments = $dokuwiki->send_request(
+    RPC::XML::request->new('wiki.getAttachments',
+      RPC::XML::string->new(''),
+      RPC::XML::struct->new({
+          depth => 0,
+          skipacl => 1,
+          hash => 0,
+          pattern => '/.*/'
+      })
+    )
+  );
+  info("Getting attachments (". scalar(@{$attachments->value})
+       . " attachments)...");
+  foreach my $att (@{$attachments->value}) {
+    my $v = $$att{mtime};
+    my $pg = $$att{id};
+    my $fqpg = $pg;
+    $fqpg =~ s{:}{/}g;
+    delete $$last{a}{$fqpg};
+    $$cur{a}{$fqpg} = 1;
+
+    next if $v < $$last{v};
+    next if $v > $server_time;
+    push(@{$import{$v}}, {
+        action => "A",
+        author => "git-remote-dokuwiki",
+        comment => "Attachment added",
+        pg => $pg,
+        fqpg => $fqpg,
+      }
+    );
+  }
+
+  # STEP: Get implied attachment deletions.
+  info("Generating implied deletions (". scalar(keys(%{$$last{a}}))
+       . " attachments)...");
+  foreach my $doomed (keys(%{$$last{a}})) {
+    push(@{$import{$server_time}}, {
+        action => "D",
+        author => "git-remote-dokuwiki",
+        comment => "git-remote-dokuwiki implied delete detected.",
+        fqpg => $doomed,
+      }
+    );
+  }
+
+  # STEP: Process all actions on files.
+  my $mark = 1;
+  info("Getting content (". scalar(keys(%import)). " revisions)...");
+  foreach my $v (sort(keys(%import))) {
+    foreach my $act (@{$import{$v}}) {
+      print "commit refs/dokuwiki/$remotename/master\n";
+      print "mark :$mark\n";
+      print "committer $$act{author} <$$act{author}\@$domain>"
+            . " $v +0000\n";
+      print_data $$act{comment};
+      if ($$last{v} != 0 && $mark == 1) {
+        print "from refs/dokuwiki/$remotename/master^0\n"
+      }
+      if ($$act{action} eq "A") {
+        print "M 755 inline $$act{fqpg}\n";
+        my $req = RPC::XML::request->new('wiki.getAttachment',
+                    RPC::XML::string->new($$act{pg}));
+        my $content = $dokuwiki->send_request($req);
+        print_data_raw $content->value;
+        print "\n\n";
+      } elsif ($$act{action} ne "D") {
+        print "M 644 inline $$act{fqpg}\n";
+        my $req = RPC::XML::request->new('wiki.getPageVersion',
+                    RPC::XML::string->new($$act{pg}),
+                    RPC::XML::int->new($v));
+        my $content = $dokuwiki->send_request($req);
+        print_data_raw $content->value;
+        print "\n\n";
+      } else {
+        print "D $$act{fqpg}\n";
+      }
+      $mark++;
+    }
+  }
+  if ($mark > 1) {
+    info("Writing note (". localtime($server_time). ")...");
+    $mark--;
+    $$cur{v} = $server_time;
+    if ($$last{v} == 0) {
+      print "reset refs/notes/$remotename/dokuwiki\n"
+    }
+    print "commit refs/notes/$remotename/dokuwiki\n";
+    print "committer git-remote-dokuwiki <git-remote-dokuwiki\@$domain> "
+          . "$server_time +0000\n";
+    print_data "Note added by git-dokuwiki during import";
+    if ($$last{v} != 0) {
+      print "from refs/notes/$remotename/dokuwiki^0\n";
+    }
+    print "N inline :$mark\n";
+    print_data encode_json($cur);
+    print "\n\n";
+  }
+}
+
+sub get_last_fetch_info {
+  my $note = run_git("notes --ref=$remotename/dokuwiki show"
+                     . " refs/dokuwiki/$remotename/master 2>/dev/null");
+  my $fetch_info;
+  try {
+    $fetch_info = decode_json($note);
+  } catch {
+    $fetch_info = {v => 0, a => {}, p => {}};
+  };
+  return $fetch_info;
+}
+
+sub set_last_fetch_info {
+  my ($fetch_info, $commit) = @_;
+
+  my $note = encode_json($fetch_info);
+  run_git(qq(notes --ref=$remotename/dokuwiki add -f -m "$note" ${commit}));
+}
+
+sub dw_push {
+  my @refspecs = get_more_args("push", shift);
+  info("refspecs: ". join(", ", @refspecs));
+  foreach my $rs (@refspecs) {
+    die("Forced push not allowed on Dokuwiki\n") if $rs =~ /^\+/;
+    my ($local, $remote) = $rs =~ /^([^:]*):([^:]*)$/
+      or die("Invalid refspec for push. Expected <src>:<dst>\n");
+    die("Cannot delete remote branch on Dokuwiki\n") if $local eq q{};
+    die("Can only push to 'master' on Dokuwiki\n")
+      if $remote ne "refs/heads/master";
+    die("TODO: push not implemented.\n");
+  }
+}
