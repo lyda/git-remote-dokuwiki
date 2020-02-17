@@ -113,7 +113,6 @@ sub print_data {
 sub print_data_raw {
   my $data = shift;
 
-  utf8::downgrade($data);
   binmode STDOUT, ":raw";
   print "data ". bytes::length($data). "\n". $data;
   binmode STDOUT, ":encoding(UTF-8)";
