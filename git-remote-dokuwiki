@@ -107,14 +107,15 @@ sub exit_error_usage {
 sub print_data {
   my $data = shift;
 
-  print "data ". bytes::length($data). "\n". $data;
+  print "data ". length($data). "\n". $data;
 }
 
 sub print_data_raw {
   my $data = shift;
 
+  utf8::encode(my $raw = $data);
   binmode STDOUT, ":raw";
-  print "data ". bytes::length($data). "\n". $data;
+  print "data ". length($raw). "\n". $raw;
   binmode STDOUT, ":encoding(UTF-8)";
 }
 
@@ -347,7 +348,7 @@ sub dw_import_ref {
       print "mark :$mark\n";
       print "committer $$act{author} <$$act{author}\@$domain>"
             . " $v +0000\n";
-      print_data $$act{comment};
+      print_data_raw $$act{comment};
       if ($$last{v} != 0 && $mark == 1) {
         print "from refs/dokuwiki/$remotename/master^0\n"
       }
@@ -359,12 +360,6 @@ sub dw_import_ref {
         $req = RPC::XML::request->new('wiki.getAttachmentInfo',
                     RPC::XML::string->new($$act{pg}));
         my $meta = $dokuwiki->send_request($req);
-        info("Getting $$act{fqpg} (size: ". $$meta{size}->value
-             . ", length: ". length($content->value)
-             . ", bytes::length: ". bytes::length($content->value) . ")");
-        open(F, ">$mark.$$act{pg}");
-        print F $content->value;
-        close(F);
         print_data_raw $content->value;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
