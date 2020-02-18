@@ -104,18 +104,23 @@ sub exit_error_usage {
       "Then, use git commit, push and pull as with every normal git repository.\n";
 }
 
-sub print_data {
-  my $data = shift;
-
-  print "data ". length($data). "\n". $data;
-}
-
 sub print_data_raw {
   my $data = shift;
 
   utf8::encode(my $raw = $data);
   binmode STDOUT, ":raw";
   print "data ". length($raw). "\n". $raw;
+  binmode STDOUT, ":encoding(UTF-8)";
+}
+
+sub print_data_xml {
+  my $data = shift;
+
+  binmode STDOUT, ":raw";
+  my $buf; open my $buf_fh, '>:raw', \$buf or die "Couldn't open xml buffer.\n";
+  my $buf_len = $data->to_file($buf_fh);
+  close($buf_fh);
+  print "data ". $buf_len. "\n". $buf;
   binmode STDOUT, ":encoding(UTF-8)";
 }
 
@@ -360,7 +365,7 @@ sub dw_import_ref {
         $req = RPC::XML::request->new('wiki.getAttachmentInfo',
                     RPC::XML::string->new($$act{pg}));
         my $meta = $dokuwiki->send_request($req);
-        print_data_raw $content->value;
+        print_data_xml $content;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
         print "M 644 inline $$act{fqpg}\n";
@@ -368,7 +373,7 @@ sub dw_import_ref {
                     RPC::XML::string->new($$act{pg}),
                     RPC::XML::int->new($v));
         my $content = $dokuwiki->send_request($req);
-        print_data_raw $content->value;
+        print_data_raw $content;
         print "\n\n";
       } else {
         print "D $$act{fqpg}\n";
@@ -386,12 +391,12 @@ sub dw_import_ref {
     print "commit refs/notes/$remotename/dokuwiki\n";
     print "committer git-remote-dokuwiki <git-remote-dokuwiki\@$domain> "
           . "$server_time +0000\n";
-    print_data "Note added by git-dokuwiki during import";
+    print_data_raw "Note added by git-dokuwiki during import";
     if ($$last{v} != 0) {
       print "from refs/notes/$remotename/dokuwiki^0\n";
     }
     print "N inline :$mark\n";
-    print_data encode_json($cur);
+    print_data_raw encode_json($cur);
     print "\n\n";
   }
 }
