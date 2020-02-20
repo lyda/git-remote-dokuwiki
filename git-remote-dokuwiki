@@ -354,7 +354,7 @@ sub dw_import_ref {
   info("Getting content ($revisions revisions)...");
   foreach my $v (sort(keys(%import))) {
     foreach my $act (@{$import{$v}}) {
-      info_status("Getting $mark of $revisions...");
+      info_status("Retrieving $mark of $revisions...");
       print "commit refs/dokuwiki/$remotename/master\n";
       print "mark :$mark\n";
       print "committer $$act{author} <$$act{author}\@$domain>"
@@ -376,7 +376,7 @@ sub dw_import_ref {
                     RPC::XML::string->new($$act{pg}),
                     RPC::XML::int->new($v));
         my $content = $dokuwiki->send_request($req);
-        print_data_raw $content;
+        print_data_raw $content->value;
         print "\n\n";
       } else {
         print "D $$act{fqpg}\n";
