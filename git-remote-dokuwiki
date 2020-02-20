@@ -94,6 +94,10 @@ sub info {
   print STDERR shift . "\n";
 }
 
+sub info_status {
+  print STDERR "\r" . shift;
+}
+
 sub exit_error_usage {
   die "ERROR: git-remote-dokuwiki module was not called with a correct number of\n" .
       "parameters\n" .
@@ -346,9 +350,11 @@ sub dw_import_ref {
 
   # STEP: Process all actions on files.
   my $mark = 1;
-  info("Getting content (". scalar(keys(%import)). " revisions)...");
+  my $revisions = scalar(keys(%import));
+  info("Getting content ($revisions revisions)...");
   foreach my $v (sort(keys(%import))) {
     foreach my $act (@{$import{$v}}) {
+      info_status("Getting $mark of $revisions...");
       print "commit refs/dokuwiki/$remotename/master\n";
       print "mark :$mark\n";
       print "committer $$act{author} <$$act{author}\@$domain>"
@@ -378,6 +384,7 @@ sub dw_import_ref {
       $mark++;
     }
   }
+  info("complete.");
   if ($mark > 1) {
     info("Writing note (". localtime($server_time). ")...");
     $mark--;
