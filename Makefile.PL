@@ -28,7 +28,7 @@ WriteMakefile(
   PREREQ_PM => {
     'Git'                  => '0.01',
     'HTTP::CookieJar::LWP' => '0.0080',
-    'JSON'                 => '4.024.02',
+    'JSON'                 => '4.02',
     'RPC::XML::Client'     => '1.42',
     'Try::Tiny'            => '0.30',
   },
