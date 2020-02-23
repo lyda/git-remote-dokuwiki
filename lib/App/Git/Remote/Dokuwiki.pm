@@ -11,7 +11,9 @@ App::Git::Remote::Dokuwiki - A git remote for dokuwiki
 =head1 VERSION
 
 Version 0.1
+
 =cut
+
 our $VERSION = '0.1';
 
 =head1 SYNOPSIS
@@ -57,6 +59,10 @@ The following links were very useful in writing this:
 =item Docs for L<git-remote-helpers|https://git-scm.com/docs/git-remote-helpers>
 
 =item Docs for L<dokuwiki|https://www.dokuwiki.org/dokuwiki>
+
+=item Example CPAN app1: L<cpanminus|https://github.com/miyagawa/cpanminus>
+
+=item Example CPAN app2: L<opan|https://github.com/shadowcat-mst/App-opan>
 
 =back
 
