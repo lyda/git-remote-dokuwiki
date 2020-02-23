@@ -21,7 +21,7 @@ WriteMakefile(
     'script/git-remote-dokuwiki'
   ],
   MAN1PODS         => {
-    'script/git-remote-dokuwiki' => 'blib/man1/git-remote-dokuwiki.1',
+    'lib/App/Git/Remote/Dokuwiki.pm' => 'blib/man1/git-remote-dokuwiki.1',
   }
   MIN_PERL_VERSION => '5.006',
   CONFIGURE_REQUIRES => {
