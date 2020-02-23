@@ -10,4 +10,4 @@ script:
   - docker ps -a
   - perl Makefile.PL
   - make install
-  - make test
+  - git clone dokuwiki::http://127.0.0.1/ test-wiki
