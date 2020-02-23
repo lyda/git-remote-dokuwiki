@@ -29,3 +29,11 @@ many
 ways
 than
 they
+exec
+bash
+then
+find
+type
+make
+sort
+uniq

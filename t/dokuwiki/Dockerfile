@@ -18,3 +18,4 @@ RUN apt-get update \
   && rm /var/log/apache2/*.log
 COPY files/ /
 RUN chown -R www-data:www-data /var/www/dokuwiki/data
+WORKDIR /var/www/dokuwiki

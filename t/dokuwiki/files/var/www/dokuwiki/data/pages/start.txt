@@ -1,0 +1,17 @@
+How to add more pages to the docker container and track what's changed.
+
+First, run ''docker exec -ti dokuwiki /bin/bash'' and then do this in that shell:
+
+''find . -type f | xargs md5sum > /tmp/0.dokuwiki''
+
+Make your changes and run this:
+
+''find . -type f | xargs md5sum > /tmp/1.dokuwiki''
+
+''cat /tmp/0.dokuwiki /tmp/0.dokuwiki /tmp/1.dokuwiki | sort | uniq -u''
+
+You can then use ''docker cp'' to get the files.  It's easier to do this with ''tar'':
+
+''tar cf stuff.tar $(cat /tmp/0.dokuwiki /tmp/0.dokuwiki /tmp/1.dokuwiki | sort | uniq -u | cut '-d ' -f3)''
+
+And then do ''docker cp dokuwiki:/var/www/dokuwiki/stuff.tar .''
