@@ -1,6 +1,6 @@
 use 5.006;
 use strict;
-use warnings;
+use warnings FATAL => 'all';;
 use ExtUtils::MakeMaker;
 
 my $meta_merge = {
@@ -12,12 +12,17 @@ my $meta_merge = {
 };
 
 WriteMakefile(
-  NAME             => 'Git::Dokuwiki',
+  NAME             => 'App::Git::Remote::Dokuwiki',
   AUTHOR           => q{<Kevin Lyda> <<kevin@lyda.ie>>},
-  VERSION_FROM     => 'lib/Git/Dokuwiki.pm',
-  ABSTRACT_FROM    => 'lib/Git/Dokuwiki.pm',
+  VERSION_FROM     => 'script/git-remote-dokuwiki',
+  ABSTRACT_FROM    => 'script/git-remote-dokuwiki',
   LICENSE          => 'gpl2',
-  PL_FILES         => {},
+  EXE_FILES        => [
+    'script/git-remote-dokuwiki'
+  ],
+  MAN1PODS         => {
+    'script/git-remote-dokuwiki' => 'blib/man1/git-remote-dokuwiki.1',
+  }
   MIN_PERL_VERSION => '5.006',
   CONFIGURE_REQUIRES => {
     'ExtUtils::MakeMaker' => '0',
@@ -33,5 +38,5 @@ WriteMakefile(
     'Try::Tiny'            => '0.30',
   },
   dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-  clean => { FILES => 'Git-Dokuwiki-*' },
+  clean => { FILES => 'App-Git-Remote-Dokuwiki-*' },
 );
