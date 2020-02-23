@@ -1,0 +1,13 @@
+---
+language: perl
+
+services:
+  - docker
+
+script:
+  - docker build -t dokuwiki t/dokuwiki
+  - docker run -d -p 127.0.0.1:80:8000 dokuwiki
+  - docker ps -a
+  - perl Makefile.PL
+  - make install
+  - make test
