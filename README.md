@@ -8,9 +8,9 @@ This is a git remote helper to work with a Dokuwiki via git.
 
 # DEPENDENCIES
 
-HTTP::CookieJar::LWP - https://metacpan.org/pod/HTTP::CookieJar::LWP
-JSON                 - https://metacpan.org/pod/JSON
-RPC::XML::Client     - https://metacpan.org/pod/RPC::XML::Client
+  * [`HTTP::CookieJar::LWP`](https://metacpan.org/pod/HTTP::CookieJar::LWP)
+  * [JSON](https://metacpan.org/pod/JSON)
+  * [RPC::XML::Client](https://metacpan.org/pod/RPC::XML::Client)
 
 Debian packages: libhttp-cookiejar-perl libjson-perl librpc-xml-perl
 

@@ -54,7 +54,7 @@ The following links were very useful in writing this:
 
 =item L<Git::Mediawiki|https://github.com/Git-Mediawiki/Git-Mediawiki> project
 
-=item The Dokuwiki L<xmlrpc docs|https://www.dokuwiki.org/devel:xmlrpc:clients>
+=item The Dokuwiki L<xmlrpc docs|https://www.dokuwiki.org/devel:xmlrpc>
 
 =item Docs for L<git-remote-helpers|https://git-scm.com/docs/git-remote-helpers>
 

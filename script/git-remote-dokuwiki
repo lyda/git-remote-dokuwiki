@@ -247,15 +247,16 @@ sub dw_import_ref {
                   skipacl => 1,
                   hash => 0,
               ));
-  my $res = $dokuwiki->send_request($req);
+  my $pages = $dokuwiki->send_request($req);
   my %import;
-  info("Getting revisions (". scalar(@{$res->value}). " pages)...");
+  my $revisions;
+  info("Getting revisions (". scalar(@{$pages->value}). " pages)...");
   # Get the current server time here to ensure we're getting a consistent
   # view of the pages.
   $req = RPC::XML::request->new('dokuwiki.getTime');
   my $server_time = $dokuwiki->send_request($req)->value;
   # STEP: Get pages.
-  foreach my $page (@{$res->value}) {
+  foreach my $page (@{$pages->value}) {
     my $pg = $$page{id};
     my $fqpg = $pg;
     $fqpg =~ s{:}{/}g;
@@ -265,6 +266,18 @@ sub dw_import_ref {
                RPC::XML::string->new($pg),
                RPC::XML::int->new(0));
     my $versions = $dokuwiki->send_request($req);
+    if (scalar(@{$versions}) == 0) {
+      $revisions++;
+      push(@{$import{$$page{rev}}}, {
+          action => "unseeded",
+          author => "git-remote-dokuwiki",
+          comment => "File came with dokuwiki and is unchanged",
+          pg => $pg,
+          fqpg => $fqpg,
+        }
+      );
+      next;
+    }
     foreach my $version (@{$versions}) {
       my $v = $$version{version}->value;
       next if $v < $$last{v};
@@ -273,6 +286,7 @@ sub dw_import_ref {
       $comment .= "\n\n" if $comment ne "";
       $comment .= "IP: ". $$version{ip}->value. "\n";
       my $user = $$version{user}->value;
+      $revisions++;
       push(@{$import{$v}}, {
           action => $$version{type}->value,
           author => $user eq ""? "anonymous": $user,
@@ -288,6 +302,7 @@ sub dw_import_ref {
   info("Generating implied deletions (". scalar(keys(%{$$last{p}}))
        . " pages)...");
   foreach my $doomed (keys(%{$$last{p}})) {
+    $revisions++;
     push(@{$import{$server_time}}, {
         action => "D",
         author => "git-remote-dokuwiki",
@@ -321,6 +336,7 @@ sub dw_import_ref {
 
     next if $v < $$last{v};
     next if $v > $server_time;
+    $revisions++;
     push(@{$import{$v}}, {
         action => "A",
         author => "git-remote-dokuwiki",
@@ -335,6 +351,7 @@ sub dw_import_ref {
   info("Generating implied deletions (". scalar(keys(%{$$last{a}}))
        . " attachments)...");
   foreach my $doomed (keys(%{$$last{a}})) {
+    $revisions++;
     push(@{$import{$server_time}}, {
         action => "D",
         author => "git-remote-dokuwiki",
@@ -346,7 +363,6 @@ sub dw_import_ref {
 
   # STEP: Process all actions on files.
   my $mark = 1;
-  my $revisions = scalar(keys(%import));
   info("Getting content ($revisions revisions)...");
   foreach my $v (sort(keys(%import))) {
     foreach my $act (@{$import{$v}}) {
@@ -365,6 +381,13 @@ sub dw_import_ref {
                     RPC::XML::string->new($$act{pg}));
         my $content = $dokuwiki->send_request($req);
         print_data_xml $content;
+        print "\n\n";
+      } elsif ($$act{action} ne "unseeded") {
+        print "M 755 inline $$act{fqpg}\n";
+        my $req = RPC::XML::request->new('wiki.getPage',
+                    RPC::XML::string->new($$act{pg}));
+        my $content = $dokuwiki->send_request($req);
+        print_data_raw $content;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
         print "M 644 inline $$act{fqpg}\n";
