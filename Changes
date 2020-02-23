@@ -1,5 +1,5 @@
 Revision history for App::Git::Remote::Dokuwiki
 
-0.01    2020-02-23/15:31
+0.1     2020-02-23/15:31
         This manages to do clones and subsequent fetches.
 

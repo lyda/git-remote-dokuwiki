@@ -1,6 +1,6 @@
-Git-Dokuwiki
+App::Git::Remote::Dokuwiki
 
-Version 0.0.1
+Version 0.1
 
 This is a git remote helper to work with a Dokuwiki via git.
 
