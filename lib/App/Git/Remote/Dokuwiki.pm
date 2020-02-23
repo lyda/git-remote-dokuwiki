@@ -54,6 +54,10 @@ The following links were very useful in writing this:
 
 =item The Dokuwiki L<xmlrpc docs|https://www.dokuwiki.org/devel:xmlrpc:clients>
 
+=item Docs for L<git-remote-helpers|https://git-scm.com/docs/git-remote-helpers>
+
+=item Docs for L<dokuwiki|https://www.dokuwiki.org/dokuwiki>
+
 =back
 
 =head1 AUTHOR
