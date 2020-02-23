@@ -13,4 +13,5 @@ script:
   - docker ps -a
   - perl Makefile.PL
   - make install
-  - git clone dokuwiki::http://127.0.0.1/ test-wiki
+  - git clone dokuwiki::http://127.0.0.1:8000/ test-wiki
+  - cd 127.0.0.1 && git log | cat
