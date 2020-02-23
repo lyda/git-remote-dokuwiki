@@ -382,12 +382,12 @@ sub dw_import_ref {
         my $content = $dokuwiki->send_request($req);
         print_data_xml $content;
         print "\n\n";
-      } elsif ($$act{action} ne "unseeded") {
+      } elsif ($$act{action} eq "unseeded") {
         print "M 755 inline $$act{fqpg}\n";
         my $req = RPC::XML::request->new('wiki.getPage',
                     RPC::XML::string->new($$act{pg}));
         my $content = $dokuwiki->send_request($req);
-        print_data_raw $content;
+        print_data_raw $content->value;
         print "\n\n";
       } elsif ($$act{action} ne "D") {
         print "M 644 inline $$act{fqpg}\n";
