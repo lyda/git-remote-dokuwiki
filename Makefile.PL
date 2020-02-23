@@ -14,15 +14,15 @@ my $meta_merge = {
 WriteMakefile(
   NAME             => 'App::Git::Remote::Dokuwiki',
   AUTHOR           => q{<Kevin Lyda> <<kevin@lyda.ie>>},
-  VERSION_FROM     => 'script/git-remote-dokuwiki',
-  ABSTRACT_FROM    => 'script/git-remote-dokuwiki',
-  LICENSE          => 'gpl2',
+  VERSION_FROM     => 'lib/App/Git/Remote/Dokuwiki.pm',
+  ABSTRACT_FROM    => 'lib/App/Git/Remote/Dokuwiki.pm',
+  LICENSE          => 'gpl_2',
   EXE_FILES        => [
     'script/git-remote-dokuwiki'
   ],
   MAN1PODS         => {
     'lib/App/Git/Remote/Dokuwiki.pm' => 'blib/man1/git-remote-dokuwiki.1',
-  }
+  },
   MIN_PERL_VERSION => '5.006',
   CONFIGURE_REQUIRES => {
     'ExtUtils::MakeMaker' => '0',
@@ -33,7 +33,7 @@ WriteMakefile(
   PREREQ_PM => {
     'Git'                  => '0.01',
     'HTTP::CookieJar::LWP' => '0.0080',
-    'JSON'                 => '4.024.02',
+    'JSON'                 => '0',
     'RPC::XML::Client'     => '1.42',
     'Try::Tiny'            => '0.30',
   },
