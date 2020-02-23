@@ -16,4 +16,4 @@ RUN apt-get update \
   && mv dokuwiki-*/ dokuwiki \
   && chown -R www-data:www-data /var/www/dokuwiki \
   && rm /var/log/apache2/*.log
-COPY apache-site.conf /etc/apache2/sites-enabled/000-default.conf
+COPY files/ /

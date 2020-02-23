@@ -64,6 +64,8 @@ The following links were very useful in writing this:
 
 =item Example CPAN app2: L<opan|https://github.com/shadowcat-mst/App-opan>
 
+=item Docker L<on Travis|https://docs.travis-ci.com/user/docker/>
+
 =back
 
 =head1 AUTHOR
