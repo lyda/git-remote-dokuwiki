@@ -4,6 +4,8 @@ Version 0.1
 
 This is a git remote helper to work with a Dokuwiki via git.
 
+[![Build Status](https://travis-ci.com/lyda/git-remote-dokuwiki.svg?branch=master)](https://travis-ci.com/lyda/git-remote-dokuwiki)
+
 # DEPENDENCIES
 
 HTTP::CookieJar::LWP - https://metacpan.org/pod/HTTP::CookieJar::LWP
