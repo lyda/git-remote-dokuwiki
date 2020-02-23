@@ -1,10 +1,10 @@
-App::Git::Remote::Dokuwiki
+# App::Git::Remote::Dokuwiki
 
 Version 0.1
 
 This is a git remote helper to work with a Dokuwiki via git.
 
-DEPENDENCIES
+# DEPENDENCIES
 
 HTTP::CookieJar::LWP - https://metacpan.org/pod/HTTP::CookieJar::LWP
 JSON                 - https://metacpan.org/pod/JSON
@@ -12,45 +12,51 @@ RPC::XML::Client     - https://metacpan.org/pod/RPC::XML::Client
 
 Debian packages: libhttp-cookiejar-perl libjson-perl librpc-xml-perl
 
-INSTALLATION
+# INSTALLATION
 
 To install this module, run the following commands:
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+```bash
+perl Makefile.PL
+make
+make test
+make install
+```
 
-SUPPORT AND DOCUMENTATION
+# SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc App::Git::Remote::Dokuwiki
+```bash
+perldoc App::Git::Remote::Dokuwiki
+```
 
 or you can call up the man page for the script.
 
-    man git-remote-dokuwiki
+```bash
+man git-remote-dokuwiki
+```
 
 You can also look for information at:
 
-    Github
-        https://github.com/lyda/git-remote-dokuwiki
+  * Github:
+    https://github.com/lyda/git-remote-dokuwiki
 
-    Github issue tracker (report bugs here)
-        https://github.com/lyda/git-remote-dokuwiki/issues
+  * Github issue tracker (report bugs here):
+    https://github.com/lyda/git-remote-dokuwiki/issues
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/App-Git-Remote-Dokuwiki
+  * AnnoCPAN, Annotated CPAN documentation:
+    http://annocpan.org/dist/App-Git-Remote-Dokuwiki
 
-    CPAN Ratings
-        http://cpanratings.perl.org/d/App-Git-Remote-Dokuwiki
+  * CPAN Ratings:
+    http://cpanratings.perl.org/d/App-Git-Remote-Dokuwiki
 
-    Search CPAN
-        http://search.cpan.org/dist/App-Git-Remote-Dokuwiki/
+  * Search CPAN:
+    http://search.cpan.org/dist/App-Git-Remote-Dokuwiki/
 
 
-LICENSE AND COPYRIGHT
+# LICENSE AND COPYRIGHT
 
 Copyright (C) 2020 <Kevin Lyda>
 

@@ -1,5 +1,8 @@
 ---
 language: perl
+perl:
+  - "5.30"
+  - "5.26"
 
 services:
   - docker
