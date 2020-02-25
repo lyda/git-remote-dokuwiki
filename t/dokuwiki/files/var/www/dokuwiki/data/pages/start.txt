@@ -15,3 +15,6 @@ You can then use ''docker cp'' to get the files.  It's easier to do this with ''
 ''tar cf stuff.tar $(cat /tmp/0.dokuwiki /tmp/0.dokuwiki /tmp/1.dokuwiki | sort | uniq -u | cut '-d ' -f3)''
 
 And then do ''docker cp dokuwiki:/var/www/dokuwiki/stuff.tar .''
+
+[[utf|UTF Exerciser]]
+
