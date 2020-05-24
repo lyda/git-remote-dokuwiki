@@ -453,6 +453,6 @@ sub dw_push {
     die("Cannot delete remote branch on Dokuwiki\n") if $local eq q{};
     die("Can only push to 'master' on Dokuwiki\n")
       if $remote ne "refs/heads/master";
-    die("TODO: push not implemented.\n");
+    die("Push not implemented.\n");
   }
 }
